@@ -1,10 +1,10 @@
-const CACHE_NAME = 'netnote-v3'; // Ubah versi cache agar browser memuat file baru
+const CACHE_NAME = 'netnote-v3'; 
 const ASSETS = [
   './',
   './index.html',
-  './manifest.webmanifest', // Tambahkan manifest
-  './icon-192.png',        // Tambahkan icon 192
-  './icon-512.png',        // Tambahkan icon 512
+  './manifest.webmanifest', // PASTIKAN INI ADA
+  './icon-192.png',        // PASTIKAN INI ADA
+  './icon-512.png',        // PASTIKAN INI
   // CSS & Fonts
   'https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
