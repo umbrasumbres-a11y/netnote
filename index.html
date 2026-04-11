@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>NetNote</title>
+  
+  <!-- META TAGS PWA -->
+  <meta name="theme-color" content="#f5f5f5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="NetNote">
+  <meta name="description" content="Catat pikiran dan ide pentingmu setiap hari">
+  
+  <!-- LINK EKSTERNAL: MANIFEST & ICONS -->
+  <!-- Pastikan file manifest.webmanifest, icon-192.png, dan icon-512.png ada di folder yang sama -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="shortcut icon" href="/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+
+  <!-- ASSETS (FONTS & ICONS) -->
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#f5f5f5;--card:#ffffff;--fg:#2d2d2d;--fg2:#666;
+      --fg3:#bbb;--accent:#6b9e8a;--accent-dk:#568375;
+      --accent-lt:#e3f0e8;--border:#eaeaea;--shadow:0 2px 10px rgba(0,0,0,.06);
+      --r:14px;--rs:10px;
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:'Open Sans',sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+    .app{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);position:relative}
+
+    /* === HEADER === */
+    .hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+    .hdr-left{display:flex;align-items:center;gap:10px}
+    .app-logo{width:34px;height:34px;border-radius:8px;flex-shrink:0}
+    .app-name{font-size:18px;font-weight:700;letter-spacing:-.3px}
+    .hdr-right{display:flex;gap:2px}
+    .ib{width:38px;height:38px;border:none;background:0 0;color:var(--fg2);cursor:pointer;border-radius:10px;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.2s}
+    .ib:hover,.ib:active{background:var(--bg);color:var(--fg)}
+
+    /* === TOOLBARS === */
+    .tbar{background:var(--card);max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease,border-width .3s ease;border-bottom:0 solid var(--border)}
+    .tbar.open{max-height:130px;padding:10px 18px 12px;border-bottom-width:1px}
+    .tbar-inner{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:var(--rs);padding:0 12px}
+    .tbar-inner i{color:var(--fg3);font-size:13px;flex-shrink:0}
+    .tbar-inner input{flex:1;border:none;background:0 0;padding:10px 0;font-family:'Open Sans',sans-serif;font-size:14px;color:var(--fg);outline:none}
+    .tbar-inner input::placeholder{color:var(--fg3)}
+    .tbar-cl{border:none;background:0 0;color:var(--fg3);cursor:pointer;padding:4px;font-size:13px;display:none}
+    .tbar-cl.vis{display:block}
+
+    /* === FILTER CHIPS === */
+    .frow{display:flex;gap:8px;padding:0 18px;background:var(--card);max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease;border-bottom:0 solid var(--border)}
+    .frow.open{max-height:56px;padding:0 18px 12px;border-bottom-width:1px}
+    .fchip{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:600;color:var(--fg2);cursor:pointer;transition:.2s;white-space:nowrap;flex-shrink:0}
+    .fchip:hover{border-color:var(--accent);color:var(--accent)}
+    .fchip.on{background:var(--accent-lt);border-color:var(--accent);color:var(--accent-dk)}
+    .fchip i{font-size:11px}
+
+    /* === NOTES === */
+    .nlist{padding:14px 14px 110px}
+    .mh{font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:1.2px;padding:10px 6px 8px;display:flex;align-items:center;gap:6px}
+    .mh i{color:var(--accent)}
+    
+    .nc{display:flex;gap:14px;padding:14px;border-radius:var(--r);margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;transition:.2s;position:relative;animation:ci .35s ease both}
+    @keyframes ci{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .nc:hover{box-shadow:0 4px 18px rgba(0,0,0,.08);transform:translateY(-1px)}
+    .nc:active{transform:scale(.985)}
+    .db{width:52px;height:56px;border-radius:12px;background:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+    .db .dn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;opacity:.8;line-height:1}
+    .db .dd{font-size:20px;font-weight:700;line-height:1.3}
+    .ni{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+    .nt{font-size:14px;font-weight:600;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .nd{font-size:12px;color:var(--fg2);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .net{font-size:10px;color:var(--fg3);margin-top:1px}
+    .net i{font-size:9px;margin-right:3px}
+    
+    .nca{position:absolute;top:6px;right:6px;display:flex;gap:2px;opacity:0;transition:.2s; z-index:10} 
+    .nc:hover .nca{opacity:1}
+    @media(hover:none){.nca{opacity:1}}
+    
+    .nab{width:28px;height:28px;border:none;background:rgba(255,255,255,.7);color:var(--fg3);cursor:pointer;border-radius:7px;font-size:11px;display:flex;align-items:center;justify-content:center;transition:.2s;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px); flex-shrink:0;}
+    .nab.share:hover{background:rgba(255,255,255,.9);color:var(--accent-dk)}
+    .nab.del:hover{background:rgba(255,255,255,.9);color:#c0392b}
+    .nab.pin:hover{background:rgba(255,255,255,.9);color:#e67e22}
+    .nab.pin.active{color:#e67e22;font-weight:700}
+
+    /* === FAB === */
+    .fab{position:fixed;bottom:28px;z-index:100;width:54px;height:54px;background:var(--accent);color:#fff;border:none;border-radius:16px;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(107,158,138,.45);transition:.3s cubic-bezier(.34,1.56,.64,1);right:20px}
+    @media(min-width:481px){.fab{right:calc((100vw - 480px)/2 + 20px)}}
+    .fab:hover{transform:scale(1.08)}.fab:active{transform:scale(.94)}
+
+    /* === EMPTY === */
+    .es{text-align:center;padding:80px 30px;animation:fi .5s ease}
+    @keyframes fi{from{opacity:0}to{opacity:1}}
+    .es-ico{width:90px;height:90px;margin:0 auto 18px;background:var(--accent-lt);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--accent)}
+    .es h3{font-size:16px;font-weight:600;color:var(--fg2);margin-bottom:5px}
+    .es p{font-size:13px;color:var(--fg3)}
+    .es-search{padding:50px 20px;text-align:center;animation:fi .3s ease}
+    .es-search p{font-size:13px;color:var(--fg3)}
+
+    /* === MODAL BASE === */
+    .mo{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:.3s}
+    .mo.on{opacity:1;visibility:visible}
+    .ms{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:92vh;max-height:92dvh;overflow-y:auto;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1)}
+    .mo.on .ms{transform:translateY(0)}
+    .ms-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 0}
+    .ms-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 0}
+    .ms-title{font-size:17px;font-weight:700;flex:1}
+    .ms-actions{display:flex;gap:8px}
+    .ms-close, .ms-edit{width:32px;height:32px;border:none;background:var(--bg);color:var(--fg2);cursor:pointer;border-radius:50%;font-size:13px;display:flex;align-items:center;justify-content:center;transition:.2s}
+    .ms-close:hover, .ms-edit:hover{background:var(--border);color:var(--fg)}
+    .ms-edit{display:none}
+
+    .ms-body{padding:18px 20px 24px;display:flex;flex-direction:column;gap:16px}
+    .fg{display:flex;flex-direction:column; gap:8px;} 
+    .fg label{display:block;font-size:11px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:.8px;}
+    .fi{width:100%;padding:12px 14px;background:var(--bg);border:2px solid transparent;border-radius:var(--rs);color:var(--fg);font-family:'Open Sans',sans-serif;font-size:14px;outline:none;transition:.2s}
+    .fi::placeholder{color:var(--fg3)}
+    .fi:focus{border-color:var(--accent);background:#fff}
+    textarea.fi{min-height:150px;resize:vertical;line-height:1.65}
+
+    /* === READ MODE === */
+    .ms.read-mode .fi{border-color:transparent;background:transparent;padding:0;font-size:14px;color:var(--fg)}
+    .ms.read-mode .fi#nTitle{font-size:18px;font-weight:700;margin-bottom:8px;}
+    .ms.read-mode .fi#nBody{font-size:14px;line-height:1.7;min-height:200px;white-space:pre-wrap;}
+    .ms.read-mode .cpick-container, .ms.read-mode .ms-foot, .ms.read-mode .cpick-lbl-wrap{display:none}
+    .ms.read-mode .ms-edit{display:flex}
+
+    /* === COLOR PICKER === */
+    .cpick-container{
+        display:flex;
+        gap:12px;
+        align-items:center;
+        flex-wrap:nowrap; 
+        overflow-x:auto; 
+        padding-bottom:4px; 
+        justify-content:center;
+        scrollbar-width:none; 
+        -ms-overflow-style:none;
+    }
+    .cpick-container::-webkit-scrollbar{display:none}
+
+    .csw{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.2s;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+    .csw:hover{transform:scale(1.1)}.csw:active{transform:scale(.95)}
+    .csw.sel{border-color:var(--fg)}
+    .csw.sel::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;font-size:12px;color:var(--fg);opacity:.8}
+    .csw-def{background:var(--bg);border:2px dashed var(--border)}.csw-def.sel{border-style:solid;border-color:var(--fg)}
+    .csw-c1{background:#c8e6c9}.csw-c2{background:#b3e0f2}.csw-c3{background:#ffe0b2}.csw-c4{background:#f8bbd0}.csw-c5{background:#d1c4e9}
+    
+    .cpick-lbl-wrap{text-align:right;}
+    .cpick-lbl{font-size:11px;color:var(--fg3);font-weight:600;}
+
+    .ms-foot{padding:0 20px 28px;display:flex;gap:10px}
+    .btn{flex:1;padding:13px 20px;border:none;border-radius:var(--rs);font-family:'Open Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+    .bg{background:var(--bg);color:var(--fg2)}.bg:hover{background:var(--border)}
+    .bp{background:var(--accent);color:#fff}.bp:hover{background:var(--accent-dk)}.bp:active{transform:scale(.97)}
+    .bd{background:#c0392b;color:#fff}.bd:hover{background:#e74c3c}
+
+    /* === MENU SHEET === */
+    .bs{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:10px 0 34px;overflow:hidden;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1)}
+    .mo.on .bs{transform:translateY(0)}
+    .bs-sec{font-size:10px;font-weight:700;color:var(--fg3);text-transform:uppercase;letter-spacing:1px;padding:14px 22px 6px}
+    .bs-item{display:flex;align-items:center;gap:14px;padding:14px 22px;cursor:pointer;transition:.15s;border:none;background:0 0;width:100%;font-family:'Open Sans',sans-serif;text-align:left;color:var(--fg)}
+    .bs-item:hover,.bs-item:active{background:var(--bg)}
+    .bs-ico{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .bs-ico.green{background:var(--accent-lt);color:var(--accent-dk)}
+    .bs-ico.blue{background:#e3f2fd;color:#1976d2}
+    .bs-ico.orange{background:#fff3e0;color:#e67e22}
+    .bs-ico.pink{background:#fce4ec;color:#c62828}
+    .bs-ico.red{background:#fde8e8;color:#c0392b}
+    .bs-lbl{font-size:14px;font-weight:600}
+    .bs-desc{font-size:11px;color:var(--fg3);margin-top:1px}
+    .bs-sep{height:1px;background:var(--border);margin:4px 22px}
+
+    /* === DONATION MODAL === */
+    .don-sec{text-align:center;padding:4px 0}
+    .don-heart{font-size:36px;color:#e57373;margin-bottom:8px}
+    .don-title{font-size:17px;font-weight:700;margin-bottom:4px}
+    .don-text{font-size:13px;color:var(--fg2);line-height:1.6;margin-bottom:18px}
+    
+    .don-qr-wrap{
+        width:240px;
+        height:240px;
+        margin: 0 auto 12px;
+        background-color: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .don-qr{
+        width:100%;
+        height:100%;
+        object-fit: contain; 
+        display:block;
+    }
+
+    .don-qr-label{font-size:12px;color:var(--fg);margin-bottom:16px; display:flex; align-items:center; justify-content:center; gap:6px; padding: 0 10px; font-weight: 500;}
+    .don-info-ico{color:var(--accent); font-size: 13px;}
+
+    .don-actions{margin-bottom:20px; display:flex; flex-direction:column; gap:10px; align-items:center;}
+    
+    .don-download-btn{
+        background: var(--bg);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: 0.2s;
+    }
+    .don-download-btn:hover{background: var(--border); color: var(--accent-dk);}
+    
+    .don-close-btn{width:100%;padding:13px;border:none;border-radius:var(--rs);background:var(--accent);color:#fff;font-family:'Open Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+    .don-close-btn:hover{background:var(--accent-dk)}
+
+    /* === CONFIRM === */
+    .co{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;visibility:hidden;transition:.25s}
+    .co.on{opacity:1;visibility:visible}
+    .cb{background:var(--card);border-radius:var(--r);padding:26px;max-width:320px;width:100%;text-align:center;transform:scale(.9);transition:transform .25s cubic-bezier(.34,1.56,.64,1)}
+    .co.on .cb{transform:scale(1)}
+    .ci{width:48px;height:48px;border-radius:50%;background:#fde8e8;color:#c0392b;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:18px}
+    .ct{font-size:15px;font-weight:600;margin-bottom:4px}
+    .cs{font-size:12px;color:var(--fg3);margin-bottom:20px}
+    .ca{display:flex;gap:10px}
+
+    .hidden-input{display:none}
+    .tt{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(14px);background:var(--fg);color:var(--card);padding:10px 22px;border-radius:22px;font-size:13px;font-weight:500;opacity:0;visibility:hidden;transition:.3s;z-index:400;box-shadow:0 4px 20px rgba(0,0,0,.2);white-space:nowrap}
+    .tt.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:0 0}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+
+<!-- ===== APP ===== -->
+<div class="app" id="appWrap">
+  <header class="hdr">
+    <div class="hdr-left">
+      <!-- Logo Header (Visual Aplikasi Web) -->
+      <svg class="app-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect x="16" y="10" width="62" height="80" rx="7" fill="#6b9e8a"/>
+        <rect x="23" y="15" width="48" height="70" rx="4" fill="#fff"/>
+        <line x1="31" y1="32" x2="64" y2="32" stroke="#d8d8d8" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="31" y1="42" x2="60" y2="42" stroke="#e8e8e8" stroke-width="2" stroke-linecap="round"/>
+        <line x1="31" y1="51" x2="56" y2="51" stroke="#e8e8e8" stroke-width="2" stroke-linecap="round"/>
+        <rect x="10" y="10" width="12" height="80" rx="3.5" fill="#568375"/>
+        <circle cx="16" cy="25" r="2.2" fill="#fff" opacity=".55"/>
+        <circle cx="16" cy="37" r="2.2" fill="#fff" opacity=".55"/>
+        <circle cx="16" cy="49" r="2.2" fill="#fff" opacity=".55"/>
+      </svg>
+      <h1 class="app-name">NetNote</h1>
+    </div>
+    <div class="hdr-right">
+      <button class="ib" id="btnFilter" aria-label="Filter"><i class="fa-solid fa-arrow-down-wide-short"></i></button>
+      <button class="ib" id="btnSrc" aria-label="Cari"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <button class="ib" id="btnMore" aria-label="Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+    </div>
+  </header>
+
+  <div class="tbar" id="sbar"><div class="tbar-inner"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="srcIn" placeholder="Cari catatan..." autocomplete="off"><button class="tbar-cl" id="srcCl"><i class="fa-solid fa-xmark"></i></button></div></div>
+
+  <div class="frow" id="frow">
+    <button class="fchip on" data-sort="newest"><i class="fa-solid fa-clock-rotate-left"></i>Terbaru</button>
+    <button class="fchip" data-sort="oldest"><i class="fa-solid fa-clock-rotate-left" style="transform:scaleX(-1)"></i>Terlama</button>
+  </div>
+
+  <main class="nlist" id="nlist" role="list"></main>
+</div>
+
+<button class="fab" id="fab" aria-label="Tambah catatan"><i class="fa-solid fa-plus"></i></button>
+<input type="file" class="hidden-input" id="importFile" accept=".json">
+
+<!-- ===== MODAL: CATATAN ===== -->
+<div class="mo" id="mo" role="dialog" aria-modal="true">
+  <div class="ms" id="msContent">
+    <div class="ms-handle"></div>
+    <div class="ms-hdr">
+      <h2 class="ms-title" id="mt">Catatan Baru</h2>
+      <div class="ms-actions">
+        <button class="ms-edit" id="btnToEdit" title="Edit Catatan"><i class="fa-solid fa-pen"></i></button>
+        <button class="ms-close" id="mcl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+    <div class="ms-body">
+      <div class="fg"><label for="nTitle">Judul</label><input type="text" class="fi" id="nTitle" placeholder="Masukkan judul..." maxlength="120"></div>
+      <div class="fg"><label for="nBody">Isi Catatan</label><textarea class="fi" id="nBody" placeholder="Tulis catatan di sini..."></textarea></div>
+      
+      <div class="fg">
+          <label>Warna Catatan</label>
+          <div class="cpick-container" id="cpick">
+            <div class="csw csw-def sel" data-color="" title="Default"></div>
+            <div class="csw csw-c1" data-color="#c8e6c9" title="Hijau"></div>
+            <div class="csw csw-c2" data-color="#b3e0f2" title="Biru"></div>
+            <div class="csw csw-c3" data-color="#ffe0b2" title="Kuning"></div>
+            <div class="csw csw-c4" data-color="#f8bbd0" title="Pink"></div>
+            <div class="csw csw-c5" data-color="#d1c4e9" title="Ungu"></div>
+          </div>
+          <div class="cpick-lbl-wrap"><span class="cpick-lbl" id="cpickLbl">Default</span></div>
+      </div>
+    </div>
+    <div class="ms-foot">
+        <button class="btn bg" id="mca">Batal</button>
+        <button class="btn bp" id="msv">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: MENU ===== -->
+<div class="mo" id="moMenu" role="dialog" aria-modal="true">
+  <div class="bs">
+    <div class="ms-handle"></div>
+    <div class="bs-sec">Data</div>
+    <button class="bs-item" id="btnExport">
+      <div class="bs-ico green"><i class="fa-solid fa-download"></i></div>
+      <div><div class="bs-lbl">Unduh ke Perangkat</div><div class="bs-desc">Download file backup JSON</div></div>
+    </button>
+    <button class="bs-item" id="btnDrive">
+      <div class="bs-ico blue"><i class="fa-brands fa-google-drive"></i></div>
+      <div><div class="bs-lbl">Simpan ke Google Drive</div><div class="bs-desc">Bagikan file backup langsung ke Drive</div></div>
+    </button>
+    <button class="bs-item" id="btnImport">
+      <div class="bs-ico orange"><i class="fa-solid fa-upload"></i></div>
+      <div><div class="bs-lbl">Pulihkan Catatan</div><div class="bs-desc">Pilih file backup dari perangkat atau Drive</div></div>
+    </button>
+    <div class="bs-sep"></div>
+    <div class="bs-sec">Lainnya</div>
+    <button class="bs-item" id="btnDonasi">
+      <div class="bs-ico pink"><i class="fa-solid fa-heart"></i></div>
+      <div><div class="bs-lbl">Donasi untuk Creator</div><div class="bs-desc">Dukung pengembangan NetNote</div></div>
+    </button>
+    <button class="bs-item" id="btnClearAll">
+      <div class="bs-ico red"><i class="fa-solid fa-trash-can"></i></div>
+      <div><div class="bs-lbl">Hapus Semua Catatan</div><div class="bs-desc">Menghapus seluruh catatan secara permanen</div></div>
+    </button>
+  </div>
+</div>
+
+<!-- ===== MODAL: DONASI ===== -->
+<div class="mo" id="moDon" role="dialog" aria-modal="true">
+  <div class="ms">
+    <div class="ms-handle"></div>
+    <div class="ms-hdr"><h2 class="ms-title">Donasi</h2><button class="ms-close" id="donClose"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="ms-body">
+      <div class="don-sec">
+        <div class="don-heart"><i class="fa-solid fa-heart"></i></div>
+        <h3 class="don-title">Dukung NetNote</h3>
+        <p class="don-text">Jika NetNote berguna untuk Anda, dukung creator dengan donasi seikhlasnya.</p>
+        
+        <div class="don-qr-wrap">
+            <img id="donQrImg" class="don-qr" src="https://z-cdn-media.chatglm.cn/files/258f98b6-4146-4c1d-b6cc-7be09d423b3a.png?auth_key=1875795308-f74145f8ba7f486faac40f34872ba664-0-7865734052d32e2a21fa35050fd455c0" alt="QRIS Donasi">
+        </div>
+        
+        <div class="don-qr-label">
+            <i class="fa-solid fa-circle-info don-info-ico"></i>
+            Unduh foto QRIS dan scan dengan aplikasi mbanking atau dompet digital lain di hp anda
+        </div>
+
+        <div class="don-actions">
+            <button class="don-download-btn" id="btnDownloadQris">
+                <i class="fa-solid fa-download"></i> Unduh QRIS
+            </button>
+        </div>
+
+        <button class="don-close-btn" id="donOk">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIRM ===== -->
+<div class="co" id="co">
+  <div class="cb">
+    <div class="ci"><i class="fa-solid fa-trash-can"></i></div>
+    <p class="ct" id="coText">Hapus catatan ini?</p>
+    <p class="cs" id="coSub">Tindakan ini tidak bisa dibatalkan</p>
+    <div class="ca"><button class="btn bg" id="cocl">Batal</button><button class="btn bd" id="codl">Hapus</button></div>
+  </div>
+</div>
+
+<div class="tt" id="tt"></div>
+
+<script>
+var HARI=['MIN','SEN','SEL','RAB','KAM','JUM','SAB'];
+var BULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+var COLORS={'':{n:'Default'},'#c8e6c9':{n:'Hijau'},'#b3e0f2':{n:'Biru'},'#ffe0b2':{n:'Kuning'},'#f8bbd0':{n:'Pink'},'#d1c4e9':{n:'Ungu'}};
+
+var notes=[],editId=null,delId=null,confirmAction=null,activeSort='newest',selectedColor='';
+
+var $list=document.getElementById('nlist'),$sbar=document.getElementById('sbar'),$frow=document.getElementById('frow');
+var $srcIn=document.getElementById('srcIn'),$srcCl=document.getElementById('srcCl');
+var $mo=document.getElementById('mo'),$msContent=document.getElementById('msContent'),$mt=document.getElementById('mt'),$nT=document.getElementById('nTitle'),$nB=document.getElementById('nBody');
+var $cpick=document.getElementById('cpick'),$cpickLbl=document.getElementById('cpickLbl');
+var $btnToEdit=document.getElementById('btnToEdit');
+var $moMenu=document.getElementById('moMenu');
+var $moDon=document.getElementById('moDon'),$co=document.getElementById('co'),$coText=document.getElementById('coText'),$coSub=document.getElementById('coSub');
+var $tt=document.getElementById('tt'),$importFile=document.getElementById('importFile');
+var $appWrap=document.getElementById('appWrap');
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function pad(n){return n<10?'0'+n:''+n}
+function fmtDate(ts){var d=new Date(ts);return HARI[d.getDay()]+', '+d.getDate()+' '+BULAN[d.getMonth()]+' '+d.getFullYear()+' \u00B7 '+pad(d.getHours())+':'+pad(d.getMinutes())}
+function fmtShort(ts){var d=new Date(ts);return{day:HARI[d.getDay()],num:d.getDate()}}
+function dateStr(ts){var d=new Date(ts);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+
+function getNoteById(id){
+    for(var i=0; i<notes.length; i++){
+        if(notes[i].id === id) return notes[i];
+    }
+    return null;
+}
+
+function load(){
+  try{notes=JSON.parse(localStorage.getItem('netnote_notes'))||[]}catch(e){notes=[]}
+  
+  if(notes.length===0){
+    var now=Date.now();
+    var day1=new Date(); day1.setDate(day1.getDate()-1); day1.setHours(9,0,0,0);
+    var day2=new Date(); day2.setDate(day2.getDate()-2); day2.setHours(14,30,0,0);
+    var day3=new Date(); day3.setDate(day3.getDate()-5); day3.setHours(20,0,0,0);
+
+    notes=[
+      {id:'dm1',title:'Rencana Liburan Bali',body:'Booking tiket pesawat Garuda tanggal 25. Hotel di Seminyak sudah dikonfirmasi. Jangan lupa bawa sunscreen dan kamera underwater. Daftar makanan yang ingin dicoba: Bebek Bengil, Nasi Ayam Kedewatan.',createdAt:day1.getTime(),updatedAt:day1.getTime(),color:'#c8e6c9',pinned:true},
+      {id:'dm2',title:'Daftar Belanja Pasar',body:'1. Bawang merah 1kg\n2. Cabai rawit 250gr\n3. Telur ayam 1 rak\n4. Minyak goreng 2L\n5. Daging sapi 500gr',createdAt:day2.getTime(),updatedAt:day2.getTime(),color:'',pinned:false},
+      {id:'dm3',title:'Ide Konten YouTube',body:'Topik: "Review Aplikasi Catatan Terbaik 2024".\n- Intro: Masalah catatan di kertas hilang.\n- Solusi: Aplikasi digital.\n- Demo: Fitur Pin, Search, dan Warna.\n- Outro: Ajakan subscribe.',createdAt:day3.getTime(),updatedAt:day3.getTime(),color:'#f8bbd0',pinned:false}
+    ];save();
+  }
+}
+function save(){localStorage.setItem('netnote_notes',JSON.stringify(notes))}
+
+function getFiltered(){
+  var q=$srcIn.value.trim().toLowerCase();
+  return notes.filter(function(n){
+    if(q&&n.title.toLowerCase().indexOf(q)===-1&&n.body.toLowerCase().indexOf(q)===-1)return false;
+    return true;
+  });
+}
+
+function render(){
+  var f=getFiltered();
+  var pinned = f.filter(n => n.pinned);
+  var unpinned = f.filter(n => !n.pinned);
+
+  var sortFn = activeSort==='newest' 
+    ? function(a,b){return b.updatedAt-a.updatedAt}
+    : function(a,b){return a.updatedAt-b.updatedAt};
+
+  pinned.sort(sortFn);
+  unpinned.sort(sortFn);
+
+  var displayPinned = pinned.slice(0,5);
+  var combined = displayPinned.concat(unpinned);
+
+  if(notes.length===0){
+    $list.innerHTML='<div class="es"><div class="es-ico"><i class="fa-regular fa-note-sticky"></i></div><h3>Belum ada catatan</h3><p>Tekan tombol + untuk mulai menulis</p></div>';return;
+  }
+  if(combined.length===0){
+    $list.innerHTML='<div class="es-search"><p>Tidak ditemukan catatan</p></div>';return;
+  }
+
+  var html='',idx=0;
+  if(pinned.length > 0) {
+    html+='<div class="mh"><i class="fa-solid fa-thumbtack"></i> Disematkan ('+pinned.length+')</div>';
+    for(var j=0;j<displayPinned.length;j++){
+      html+=createCardHTML(displayPinned[j], idx++);
+    }
+  }
+  if(unpinned.length > 0) {
+    html+='<div class="mh">Catatan Lainnya</div>';
+    for(var k=0;k<unpinned.length;k++){
+      html+=createCardHTML(unpinned[k], idx++);
+    }
+  }
+  $list.innerHTML=html;
+}
+
+function createCardHTML(n, idx){
+  var dt=fmtShort(n.createdAt),pv=n.body.replace(/\n/g,' ').trim(),bg=n.color?'background:'+n.color:'background:var(--card)';
+  return '<article class="nc" role="listitem" style="animation-delay:'+idx*0.04+'s;'+bg+'" data-id="'+n.id+'">'+
+    '<div class="db"><span class="dn">'+dt.day+'</span><span class="dd">'+dt.num+'</span></div>'+
+    '<div class="ni"><h3 class="nt">'+esc(n.title||'Tanpa Judul')+'</h3>'+(pv?'<p class="nd">'+esc(pv)+'</p>':'')+'</div>'+
+    '<div class="nca">'+
+      '<button class="nab pin '+ (n.pinned?'active':'') +'" data-pin="'+n.id+'" aria-label="Pin"><i class="fa-solid fa-thumbtack"></i></button>'+
+      '<button class="nab share" data-share="'+n.id+'" aria-label="Bagikan"><i class="fa-solid fa-share-nodes"></i></button>'+
+      '<button class="nab del" data-del="'+n.id+'" aria-label="Hapus"><i class="fa-solid fa-trash-can"></i></button>'+
+    '</div>'+
+  '</article>';
+}
+
+function setColor(c){selectedColor=c;var sw=$cpick.querySelectorAll('.csw');for(var i=0;i<sw.length;i++){sw[i].classList.toggle('sel',sw[i].getAttribute('data-color')===c)}$cpickLbl.textContent=COLORS[c]?COLORS[c].n:'Default'}
+ $cpick.addEventListener('click',function(e){var sw=e.target.closest('.csw');if(sw)setColor(sw.getAttribute('data-color'))});
+
+var isEditMode = false;
+
+function openModal(){ 
+  isEditMode = true;
+  editId=null;$mt.textContent='Catatan Baru';$nT.value='';$nB.value='';setColor('');
+  setModalState();
+  $mo.classList.add('on');setTimeout(function(){$nT.focus()},280);
+}
+
+function openView(id){ 
+  isEditMode = false;
+  var n = getNoteById(id);
+  if(n){
+    editId=id;$mt.textContent='Catatan';$nT.value=n.title;$nB.value=n.body;
+    setColor(n.color||'');
+  }
+  setModalState();
+  $mo.classList.add('on');
+}
+
+function openEdit(id){ 
+  isEditMode = true;
+  var n = getNoteById(id);
+  if(n){
+    editId=id;$mt.textContent='Edit Catatan';$nT.value=n.title;$nB.value=n.body;
+    setColor(n.color||'');
+  }
+  setModalState();
+  $mo.classList.add('on');
+  setTimeout(function(){$nT.focus()},280);
+}
+
+function setModalState(){
+  if(isEditMode){
+    $msContent.classList.remove('read-mode');
+    $nT.readOnly = false;
+    $nB.readOnly = false;
+    $btnToEdit.style.display = 'none';
+  } else {
+    $msContent.classList.add('read-mode');
+    $nT.readOnly = true;
+    $nB.readOnly = true;
+    $btnToEdit.style.display = 'flex';
+  }
+}
+
+function switchToEdit(){
+  isEditMode = true;
+  setModalState();
+  $mt.textContent = 'Edit Catatan';
+  setTimeout(function(){$nT.focus()}, 100);
+}
+
+function closeModal(){$mo.classList.remove('on');editId=null}
+
+function handleSave(){
+  var title=$nT.value.trim(),body=$nB.value.trim();
+  if(!title&&!body){toast('Judul atau isi harus diisi');$nT.focus();return}
+  var now=Date.now();
+  if(editId){
+    var n = getNoteById(editId);
+    if(n){
+        n.title=title||'Tanpa Judul';n.body=body;n.updatedAt=now;n.color=selectedColor;
+    }
+    toast('Catatan diperbarui')
+  }else{
+    notes.push({id:uid(),title:title||'Tanpa Judul',body:body,createdAt:now,updatedAt:now,color:selectedColor,pinned:false});
+    toast('Catatan disimpan')
+  }
+  save(); render(); closeModal();
+}
+
+function togglePin(id){
+  var n = getNoteById(id);
+  if(!n) return;
+  if(!n.pinned){
+    var pinnedCount = 0;
+    for(var i=0; i<notes.length; i++){
+        if(notes[i].pinned) pinnedCount++;
+    }
+    if(pinnedCount >= 5){toast('Maksimal 5 catatan disematkan'); return;}
+  }
+  n.pinned = !n.pinned;
+  save(); render();
+  toast(n.pinned ? 'Disematkan' : 'Sematan dilepas');
+}
+
+function shareNote(id){
+  var n = getNoteById(id);
+  if(!n) return;
+  var t=n.title+'\n\n'+n.body+'\n\n'+fmtDate(n.createdAt);
+  if(navigator.share){navigator.share({title:n.title,text:t}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){toast('Disalin ke clipboard')}).catch(function(){fCopy(t)})}else{fCopy(t)}
+}
+function fCopy(t){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.left='-9999px';document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Disalin ke clipboard')}catch(e){toast('Gagal menyalin')}document.body.removeChild(a)}
+
+function openConfirmSingle(id){delId=id;confirmAction='single';$coText.textContent='Hapus catatan ini?';$coSub.textContent='Tindakan ini tidak bisa dibatalkan';$co.classList.add('on')}
+function openConfirmClearAll(){confirmAction='clearAll';delId=null;$coText.textContent='Hapus semua catatan?';$coSub.textContent='Seluruh catatan akan dihapus permanen';$co.classList.add('on')}
+function closeConfirm(){$co.classList.remove('on');delId=null;confirmAction=null}
+function handleDel(){
+  if(confirmAction==='clearAll'){notes=[];save();render();closeConfirm();toast('Semua catatan dihapus')}
+  else if(delId){notes=notes.filter(function(n){return n.id!==delId});save();render();closeConfirm();toast('Catatan dihapus')}
+}
+
+function getBackupData(){return JSON.stringify({app:'NetNote',version:1,exportedAt:Date.now(),notes:notes},null,2)}
+function downloadBackup(data){var blob=new Blob([data],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='netnote-backup-'+dateStr(Date.now())+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url)}
+
+function exportToDevice(){if(notes.length===0){toast('Tidak ada catatan');return}downloadBackup(getBackupData());closeMenu();toast('Backup berhasil diunduh')}
+
+async function exportToDrive(){
+  if(notes.length===0){toast('Tidak ada catatan');return}
+  var data=getBackupData();
+  var blob=new Blob([data],{type:'application/json'});
+  var file=new File([blob],'netnote-backup-'+dateStr(Date.now())+'.json',{type:'application/json'});
+  if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'Backup NetNote'});closeMenu();toast('Berhasil dibagikan')}catch(e){if(e.name!=='AbortError')toast('Gagal membagikan')}
+  } else if (navigator.share) {
+    try {
+      await navigator.share({title:'Backup NetNote', text: data});
+      closeMenu();
+      toast('Teks JSON dibagikan (Salin ke Drive Docs)');
+    } catch(e) {
+       downloadBackup(data);
+       closeMenu();
+       toast('File diunduh. Silakan upload manual ke Drive.');
+    }
+  } else {
+    downloadBackup(data);
+    closeMenu();
+    toast('File diunduh. Silakan upload manual ke Drive.');
+  }
+}
+
+function triggerImport(){$importFile.click()}
+function importNotes(file){
+  if(!file)return;var reader=new FileReader();
+  reader.onload=function(e){
+    try{var data=JSON.parse(e.target.result);var imp=[];if(data.notes&&Array.isArray(data.notes))imp=data.notes;else if(Array.isArray(data))imp=data;else{toast('Format file tidak valid');return}
+    for(var i=0;i<imp.length;i++){if(!imp[i].id||!imp[i].createdAt){toast('Format file tidak valid');return}}
+    var ex={};for(var j=0;j<notes.length;j++)ex[notes[j].id]=true;var added=0;for(var k=0;k<imp.length;k++){if(!ex[imp[k].id]){notes.push(imp[k]);added++}}
+    save();render();closeMenu();toast(added>0?added+' catatan dipulihkan':'Tidak ada catatan baru')}
+    catch(err){toast('Gagal membaca file backup')}
+  };reader.readAsText(file);
+}
+
+function closeMenu(){$moMenu.classList.remove('on')}
+
+function toggleSearch(){var o=$sbar.classList.toggle('open');if(o){$srcIn.value='';$srcCl.classList.remove('vis');render();setTimeout(function(){$srcIn.focus()},300)}else{$srcIn.value='';$srcCl.classList.remove('vis');render()}}
+function toggleFilter(){closeSearch();var o=$frow.classList.toggle('open');if(!o)render()}
+function closeSearch(){if($sbar.classList.contains('open')){$sbar.classList.remove('open');$srcIn.value='';$srcCl.classList.remove('vis')}}
+function updateChips(){var c=document.querySelectorAll('.fchip');for(var i=0;i<c.length;i++)c[i].classList.toggle('on',c[i].getAttribute('data-sort')===activeSort)}
+
+async function downloadQris(){
+  var img = document.getElementById('donQrImg');
+  var url = img.src;
+  try {
+    var response = await fetch(url);
+    if(!response.ok) throw new Error('Network response was not ok');
+    var blob = await response.blob();
+    var downloadUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = 'QRIS-NetNote.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+    toast('Berhasil mengunduh QRIS');
+  } catch (e) {
+    window.open(url, '_blank');
+    toast('Gagal unduh otomatis, membuka gambar...');
+  }
+}
+
+var _tt;function toast(m){$tt.textContent=m;$tt.classList.add('show');clearTimeout(_tt);_tt=setTimeout(function(){$tt.classList.remove('show')},2200)}
+
+document.getElementById('btnSrc').addEventListener('click',toggleSearch);
+document.getElementById('btnFilter').addEventListener('click',toggleFilter);
+document.getElementById('btnMore').addEventListener('click',function(){$moMenu.classList.add('on')});
+document.getElementById('fab').addEventListener('click',openModal);
+
+ $srcIn.addEventListener('input',function(){var v=$srcIn.value.trim();$srcCl.classList.toggle('vis',v.length>0);render()});
+ $srcCl.addEventListener('click',function(){$srcIn.value='';$srcCl.classList.remove('vis');render();$srcIn.focus()});
+
+document.querySelectorAll('.fchip').forEach(function(chip){chip.addEventListener('click',function(){activeSort=this.getAttribute('data-sort');updateChips();render()})});
+
+document.getElementById('mcl').addEventListener('click',closeModal);
+document.getElementById('mca').addEventListener('click',closeModal);
+document.getElementById('msv').addEventListener('click',handleSave);
+document.getElementById('btnToEdit').addEventListener('click',switchToEdit);
+ $mo.addEventListener('click',function(e){if(e.target===$mo)closeModal()});
+
+document.getElementById('btnExport').addEventListener('click',exportToDevice);
+document.getElementById('btnDrive').addEventListener('click',exportToDrive);
+document.getElementById('btnImport').addEventListener('click',triggerImport);
+ $importFile.addEventListener('change',function(e){if(e.target.files&&e.target.files[0])importNotes(e.target.files[0]);e.target.value=''});
+
+document.getElementById('btnDonasi').addEventListener('click',function(){closeMenu();$moDon.classList.add('on')});
+document.getElementById('donClose').addEventListener('click',function(){$moDon.classList.remove('on')});
+document.getElementById('donOk').addEventListener('click',function(){$moDon.classList.remove('on')});
+document.getElementById('btnDownloadQris').addEventListener('click',downloadQris);
+ $moDon.addEventListener('click',function(e){if(e.target===$moDon)$moDon.classList.remove('on')});
+
+document.getElementById('btnClearAll').addEventListener('click',function(){closeMenu();openConfirmClearAll()});
+ $moMenu.addEventListener('click',function(e){if(e.target===$moMenu)closeMenu()});
+
+document.getElementById('cocl').addEventListener('click',closeConfirm);
+document.getElementById('codl').addEventListener('click',handleDel);
+ $co.addEventListener('click',function(e){if(e.target===$co)closeConfirm()});
+
+ $list.addEventListener('click',function(e){
+  var pb=e.target.closest('[data-pin]');if(pb){e.stopPropagation();togglePin(pb.getAttribute('data-pin'));return}
+  var sb=e.target.closest('[data-share]');if(sb){e.stopPropagation();shareNote(sb.getAttribute('data-share'));return}
+  var db=e.target.closest('[data-del]');if(db){e.stopPropagation();openConfirmSingle(db.getAttribute('data-del'));return}
+  var c=e.target.closest('.nc');if(c)openView(c.dataset.id);
+});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if($co.classList.contains('on'))closeConfirm();
+    else if($mo.classList.contains('on'))closeModal();
+    else if($moDon.classList.contains('on'))$moDon.classList.remove('on');
+    else if($moMenu.classList.contains('on'))closeMenu();
+    else if($sbar.classList.contains('open'))closeSearch();
+  }
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&$mo.classList.contains('on')&&isEditMode)handleSave();
+  if(e.key==='/'&&!$mo.classList.contains('on')&&!$co.classList.contains('on')&&!$moDon.classList.contains('on')&&!$moMenu.classList.contains('on')&&!$sbar.classList.contains('open')){e.preventDefault();toggleSearch()}
+});
+
+// === SERVICE WORKER REGISTRATION ===
+// Kode ini mendaftarkan Service Worker eksternal (sw.js) untuk Offline Support & PWA Icon
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js', {scope: './'})
+  .then(function(registration) {
+    console.log('Service Worker terdaftar dengan sukses:', registration);
+  })
+  .catch(function(error) {
+    console.log('Pendaftaran Service Worker gagal:', error);
+  });
+}
+
+function initApp(){load();render()}
+ $appWrap.style.display='';initApp();
+</script>
+</body>
+</html>
